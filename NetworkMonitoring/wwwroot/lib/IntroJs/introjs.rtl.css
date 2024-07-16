@@ -1,0 +1,24 @@
+﻿.introjs-tooltipbuttons {
+    text-align: left
+}
+
+.introjs-skipbutton {
+    left: 0;
+    right: auto
+}
+
+.introjs-tooltip {
+    direction: rtl
+}
+
+.introjs-prevbutton {
+    float: right
+}
+
+.introjs-nextbutton {
+    float: left
+}
+
+.introjs-bullets ul li {
+    float: right
+}

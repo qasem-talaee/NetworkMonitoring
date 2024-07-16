@@ -1,0 +1,113 @@
+﻿@page
+@model NetworkMonitoring.UI.Pages.BasicData.EquipmentLocationManagementModel
+@{
+	ViewData["Title"] = "Equipment Location Management";
+}
+
+<div class="card p-3">
+    <h2>مدیریت مکان تجهیزات</h2>
+    <div class="k-rtl">
+        <div id="grid"></div>
+    </div>
+</div>
+
+<script>
+    $(document).ready(function () {
+
+        var dataSource3 = new kendo.data.DataSource({
+            transport: {
+                read: {
+                    url: '/BasicData/EquipmentLocationAll',
+                    dataType: "json",
+                    type: "get",
+                    complete: function (e) {
+                        // console.log(e);
+                    },
+                },
+                create: {
+                    url: '/BasicData/EquipmentLocation',
+                    dataType: "json",
+                    type: "post",
+                    complete: function (e) {
+                        $('#grid').data('kendoGrid').dataSource.read();
+                        if (e.responseText != null) { if (!e.responseText.includes('Forbidden')) { showNotificationMessage(e.responseText); } else { showNotificationMessage('دسترسی مجاز نیست+error'); } } else { showNotificationMessage('دسترسی مجاز نیست+error'); }
+                    }
+                },
+
+                update: {
+                    url: '/BasicData/EquipmentLocation',
+                    dataType: "json",
+                    type: "put",
+                    complete: function (e) {
+                        $('#grid').data('kendoGrid').dataSource.read();
+                        if (e.responseText != null) { if (!e.responseText.includes('Forbidden')) { showNotificationMessage(e.responseText); } else { showNotificationMessage('دسترسی مجاز نیست+error'); } } else { showNotificationMessage('دسترسی مجاز نیست+error'); }
+
+                    }
+                },
+                destroy: {
+                    url: '/BasicData/EquipmentLocation',
+                    dataType: "json",
+                    type: "delete",
+                    complete: function (e) {
+                        $('#grid').data('kendoGrid').dataSource.read();
+                        if (e.responseText != null) { if (!e.responseText.includes('Forbidden')) { showNotificationMessage(e.responseText); } else { showNotificationMessage('دسترسی مجاز نیست+error'); } } else { showNotificationMessage('دسترسی مجاز نیست+error'); }
+
+                    }
+                }
+            },
+            pageSize: 20,
+            schema: {
+                model: {
+                    id: "EquipmentLocationID",
+                    fields: {
+                        EquipmentLocationID: { hidden: false, editable: false, nullable: true },
+                        EquipmentLocationName: { validation: { required: true } },
+                    }
+                }
+            }
+        });
+
+        //-*-
+        $("#grid").kendoGrid({
+            dataSource: dataSource3,
+            height: 750,
+            filterable: {
+                extra: false,
+                operators: {
+                    string: {
+                        startswith: "شروع شده با",
+                        eq: "مساوی است با",
+                        neq: "مساوی نیست با"
+                    }
+                }
+            },
+            sortable: true,
+            pageable: true,
+            toolbar: ["create", "search"],
+            editable: {
+                mode: "popup",
+                window: { title: "مکان" }
+
+            },
+            columns: [
+
+                {
+                    field: "EquipmentLocationID",
+                    title: "ID",
+                },
+
+                {
+                    field: "EquipmentLocationName",
+                    title: "مکان",
+                },
+                { command: ["edit", "destroy"], title: "&nbsp;", width: "17em" }
+            ]
+        });
+        //-*-
+        
+        //-*-
+
+    });//End Doc ready
+</script>
+
+

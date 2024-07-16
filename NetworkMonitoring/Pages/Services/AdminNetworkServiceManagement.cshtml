@@ -1,0 +1,281 @@
+﻿@page
+@model NetworkMonitoring.UI.Pages.Service.AdminNetworkServiceManagementModel
+@{
+    ViewData["Title"] = "Network Service Manage";
+}
+
+<style>
+    li {
+        list-style: none;
+        font-size: 1rem !important;
+    }
+
+    .col-3 {
+        width: 23rem !important;
+    }
+
+    img {
+        width: 70% !important;
+    }
+
+    .bg-green {
+        background: rgb(188,245,172);
+        background: linear-gradient(90deg, rgba(188,245,172,1) 0%, rgba(57,255,94,1) 27%);
+    }
+
+    .bg-red {
+        background-color: rgba(255, 153, 153, 1);
+        background-image: linear-gradient(90deg, rgba(255, 153, 153, 1) 0%, rgba(255, 60, 60, 1) 100%);
+    }
+
+    .bg-title-nonPing {
+        background-color: rgba(179, 0, 0, 1);
+        background-image: linear-gradient(90deg, rgba(179, 0, 0, 1) 50%, rgba(200, 53, 53, 1) 70%);
+    }
+
+    .bg-title-Ping {
+        background-color: rgba(16, 121, 2, 1);
+        background-image: linear-gradient(90deg, rgba(16, 121, 2, 1) 50%, rgba(65, 148, 56, 1) 70%);
+    }
+
+    .bg-card-nonping {
+        background-color: rgba(160, 4, 4, 1);
+        background-image: linear-gradient(90deg, rgba(160, 4, 4, 1) 0%, rgba(200, 4, 4, 1) 50%);
+    }
+
+    .bg-card-ping {
+        background-color: rgba(27, 169, 8, 1);
+        background-image: linear-gradient(90deg,rgba(32, 132, 19, 1) 0%, rgba(27, 169, 8, 1) 50%);
+    }
+
+</style>
+
+<div id="DivUIDiv">
+    <h2>لیست سرویس ها</h2>
+    <div style="min-height: 100vh;">
+        <div class="row">
+            <!-- card info 1 -->
+            <div class="col-3 mb-5" v-for="item in ServiceList" v-on:click="UpdateStatus(item.NetworkServiceID)">
+                <div v-bind:class="item.IsEnable ?  'bg-card-ping shadow p-3 bg-body-tertiary rounded': 'bg-card-nonping shadow p-3 bg-body-tertiary rounded'" style="max-width:auto;">
+                    <div class="row gap-0 align-items-center">
+                        <div class="col-4">
+                            <img src="data:image/png;base64,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">
+                        </div>
+                        <div class="col-8">
+                            <div class="rounded-end-1">
+                                <ul class="text-end text-white fs-6">
+                                    <li dir="ltr"><i class="fa-regular fa-input-text"></i> <span class="fw-bold">{{ item.NetworkName }}</span></li>
+                                </ul>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+    <br />
+    <hr />
+
+    <div class="card p-3 mb-2">
+        <h2>مدیریت سرویس ها</h2>
+        <div class="k-rtl">
+            <div id="grid"></div>
+        </div>
+    </div>
+
+    <!-- ManageModal -->
+    <button hidden id="btn-Add" type="button" class="btn btn-primary" data-bs-toggle="modal" data-bs-target="#ManageModal">Add</button>
+    <button hidden id="btn-Edit" type="button" class="btn btn-primary" data-bs-toggle="modal" data-bs-target="#ManageModal">Edit</button>
+
+    <div class="modal fade" data-bs-backdrop="static" data-bs-keyboard="false" id="ManageModal" tabindex="-1" aria-labelledby="ManageChartModalLabel" aria-hidden="true">
+        <div class="modal-dialog modal-dialog-centered modal-lg">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+                </div>
+                <div class="modal-body">
+                    <!---->
+
+                    <div class="mb-3">
+                        <label class="form-label">نام سرویس</label>
+                        <input v-model="ServiceVm.NetworkName" type="text" class="form-control form-control-sm">
+                    </div>
+
+                    <!---->
+                </div>
+                <div class="modal-footer" dir="ltr">
+                    <button v-on:click="CleanUI" type="button" class="btn btn-danger" data-bs-dismiss="modal"><i class="fas fa-window-close"></i><span class="me-2">انصراف</span></button>
+                    <button v-if="!IsEditing" v-on:click="PostService" type="button" class="btn btn-success"><i class="fas fa-save"></i><span class="me-2">ذخیره</span></button>
+                    <button v-if="IsEditing" v-on:click="UpdateService" type="button" class="btn btn-warning"><i class="fas fa-save"></i><span class="me-2">ویرایش</span></button>
+                </div>
+            </div>
+        </div>
+    </div>
+    <!-- ManageModal -->
+
+</div>
+
+
+<script>
+    var DivUI = {
+        data() {
+            return {
+                ServiceVm: {
+                    NetworkServiceID: 0,
+                    NetworkName: '',
+                    IsEnable: true,
+                },//---------
+                IsEditing: false,
+                ServiceList: [],
+            }
+        },
+        mounted() {
+            this.GetAllServices();
+        },
+        methods: {
+            GetAllServices(){
+                axios.get('/Service/NetworkServiceAll').
+                    then(res => {
+                        this.ServiceList = res.data;
+                    });
+            },//-----
+            PostService() {
+                axios.post('/Service/NetworkService', this.ServiceVm).
+                    then(res => {
+                        this.CleanUI();
+                        showNotificationMessage(res.data);
+                        this.GetAllServices();
+                    });
+            },//------
+            UpdateService() {
+                axios.put('/Service/NetworkService', this.ServiceVm).
+                    then(res => {
+                        showNotificationMessage(res.data);
+                        this.IsEditing = false;
+                        this.CleanUI();
+                        this.GetAllServices();
+                    });
+
+            },//------
+            DeleteService(id) {
+                confirmDialog('آیا می خواهید سرویس را حذف کنید؟', "", 'info').then(res => {
+                    if (res.isConfirmed) {
+                        axios.delete("/Service/NetworkService/" + id).
+                            then(res => {
+                                showNotificationMessage(res.data);
+                                this.CleanUI();
+                                this.GetAllServices();
+                            });
+                    }
+                });
+            },//------
+            UpdateStatus(id) {
+                confirmDialog('آیا می خواهید وضعیت سرویس را تغییر دهید؟', "", 'info').then(res => {
+                    if (res.isConfirmed) {
+                        service = this.ServiceList.find(x => x.NetworkServiceID == id);
+                        service.IsEnable = !service.IsEnable;
+                        axios.put('/Service/NetworkService', service).
+                            then(res => {
+                                showNotificationMessage(res.data);
+                                this.CleanUI();
+                                this.GetAllServices();
+                            });
+                    }
+                });
+            },//-----
+            CleanUI() {
+                this.ServiceVm = {
+                    NetworkServiceID: 0,
+                    NetworkName: '',
+                    IsEnable: true,
+                },//---------;
+                this.IsEditing = false;
+                $('#grid').data('kendoGrid').dataSource.read();
+                $('[class="btn-close"]').click();
+            },//------
+        }
+    }
+
+    var VueService = Vue.createApp(DivUI).mount('#DivUIDiv');
+</script>
+
+
+<script>
+    $(document).ready(function () {
+
+        var dataSource = new kendo.data.DataSource({
+            transport: {
+                read: {
+                    url: '/Service/NetworkServiceAll',
+                    dataType: "json",
+                    type: "get",
+                    complete: function (e) {
+
+                    },
+                },
+            },
+            pageSize: 20,
+        });
+
+        //-*-
+        $("#grid").kendoGrid({
+            dataSource: dataSource,
+            height: 750,
+            filterable: {
+                extra: false,
+                operators: {
+                    string: {
+                        startswith: "شروع شده با",
+                        eq: "مساوی است با",
+                        neq: "مساوی نیست با"
+                    }
+                }
+            },
+            sortable: true,
+            pageable: true,
+            toolbar: [{ text: "اضافه کردن سرویس جدید", name: "newFunc" }, "search"],
+            editable: {
+                mode: "popup",
+                window: { title: "شاخص" }
+
+            },
+            columns: [
+                {
+                    field: "NetworkServiceID",
+                    title: "ID",
+                    hidden: true,
+                },
+                {
+                    field: "NetworkName",
+                    title: "نام",
+                },
+                {
+                    field: "IsEnable",
+                    title: "Enable",
+                    hidden: true,
+                },
+
+                { command: [{ text: "ویرایش", click: EditFunc }, { text: "حذف", click: RemoveFunc }], title: "&nbsp;", width: "250px" }
+
+            ]
+        });
+        //-*-
+        function EditFunc(e) {
+            e.preventDefault();
+            var dataItem = this.dataItem($(e.currentTarget).closest("tr"));
+            VueService.ServiceVm = dataItem;
+            VueService.IsEditing = true;
+            $('#btn-Edit').click();
+        }
+
+        function RemoveFunc(e) {
+            e.preventDefault();
+            var dataItem = this.dataItem($(e.currentTarget).closest("tr"));
+            VueService.DeleteService(dataItem.NetworkServiceID);
+        }
+
+        $(".k-grid-newFunc").click(function (e) { // note that the class is k-grid-new since the name of the command is new
+            $('#btn-Add').click();
+        });
+    });//End Doc ready
+</script>

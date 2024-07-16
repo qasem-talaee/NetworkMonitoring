@@ -1,0 +1,211 @@
+﻿@page
+@model NetworkMonitoring.UI.Pages.Account.ManageSystemUserModel
+@{
+    ViewData["Title"] = "مدیریت کاربران";
+}
+
+<div class="card p-3">
+    <h2>مدیریت کاربران</h2>
+    <div class="k-rtl">
+        <div id="grid"></div>
+    </div>
+</div>
+
+<script>
+    $(document).ready(function () {
+
+        var dataSource = new kendo.data.DataSource({
+            transport: {
+                read: {
+                    url: '/Account/SystemUser',
+                    dataType: "json",
+                    type: "get",
+                    complete: function (e) {
+
+                    },
+                },
+            },
+            pageSize: 20,
+        });
+
+        //-*-
+        $("#grid").kendoGrid({
+            dataSource: dataSource,
+            height: 750,
+            filterable: {
+                extra: false,
+                operators: {
+                    string: {
+                        startswith: "شروع شده با",
+                        eq: "مساوی است با",
+                        neq: "مساوی نیست با"
+                    }
+                }
+            },
+            sortable: true,
+            pageable: true,
+            toolbar: [{ text: "اضافه کردن کاربر جدید", name: "newFunc" }, "search"],
+            editable: {
+                mode: "popup",
+                window: { title: "شاخص" }
+
+            },
+            columns: [
+
+                {
+                    field: "SystemUserName",
+                    title: "نام کاربری",
+                },
+
+                {
+                    field: "SystemUserGroupID",
+                    title: "گروه کاری",
+                    template: "#=SystemUserGroup.SystemUserGroupTitle#",
+                },
+                {
+                    field: "IsDeleted",
+                    title: "فعال",
+                    template: '#if(IsDeleted){# <i class="text-danger k-icon k-i-cancel k-button-icon"></i> #} if(!IsDeleted){# <i class="text-success k-icon k-i-check k-button-icon"></i> #} #'
+                },
+
+                { command: [{ text: "ویرایش", click: EditFunc }, { text: "غیرفعال", click: RemoveFunc }], title: "&nbsp;", width: "150px" }
+
+            ]
+        });
+        //-*-
+        function EditFunc(e) {
+            e.preventDefault();
+            var dataItem = this.dataItem($(e.currentTarget).closest("tr"));
+            VueUser.UserVm = dataItem;
+            VueUser.IsEditing = true;
+            $('#btn-Edit').click();
+        }
+
+        function RemoveFunc(e) {
+            e.preventDefault();
+            var dataItem = this.dataItem($(e.currentTarget).closest("tr"));
+            VueUser.DeleteUser(dataItem.SystemUserID);
+        }
+
+        $(".k-grid-newFunc").click(function (e) { // note that the class is k-grid-new since the name of the command is new
+            $('#btn-Add').click();
+        });
+    });//End Doc ready
+</script>
+
+
+<div id="UserUIDiv">
+    <!-- ManageModal -->
+    <button hidden id="btn-Add" type="button" class="btn btn-primary" data-bs-toggle="modal" data-bs-target="#ManageModal">Add</button>
+    <button hidden id="btn-Edit" type="button" class="btn btn-primary" data-bs-toggle="modal" data-bs-target="#ManageModal">Edit</button>
+
+    <div class="modal fade" data-bs-backdrop="static" data-bs-keyboard="false" id="ManageModal" tabindex="-1" aria-labelledby="ManageChartModalLabel" aria-hidden="true">
+        <div class="modal-dialog modal-dialog-centered modal-lg">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+                </div>
+                <div class="modal-body">
+                    <!---->
+
+                    <div class="mb-3">
+                        <label class="form-label">نام کاربری</label>
+                        <input v-model="UserVm.SystemUserName" type="text" class="form-control form-control-sm">
+                    </div>
+
+                    <div class="mb-3">
+                        <label class="form-label">پسورد</label>
+                        <input v-model="UserVm.SystemUserPassword" type="password" class="form-control form-control-sm">
+                    </div>
+
+                    <div class="mb-3">
+                        <label class="form-label">گروه کاری</label>
+                        <select class="form-control form-control-sm" v-model="UserVm.SystemUserGroupID">
+                            <option v-for="item in UserGroupList" v-bind:value="item.SystemUserGroupID">{{ item.SystemUserGroupTitle }}</option>
+                        </select>
+                    </div>
+
+                    <!---->
+                </div>
+                <div class="modal-footer" dir="ltr">
+                    <button v-on:click="CleanUI" type="button" class="btn btn-danger" data-bs-dismiss="modal"><i class="fas fa-window-close"></i><span class="me-2">انصراف</span></button>
+                    <button v-if="!IsEditing" v-on:click="PostUser" type="button" class="btn btn-success"><i class="fas fa-save"></i><span class="me-2">ذخیره</span></button>
+                    <button v-if="IsEditing" v-on:click="UpdateUser" type="button" class="btn btn-warning"><i class="fas fa-save"></i><span class="me-2">ویرایش</span></button>
+                </div>
+            </div>
+        </div>
+    </div>
+    <!-- ManageModal -->
+
+</div>
+
+
+<script>
+    var UserUI = {
+        data() {
+            return {
+                UserVm: {
+                    SystemUserID: 0,
+                    SystemUserName: '',
+                    SystemUserPassword: '',
+                    SystemUserGroupID: 0,
+                    IsDeleted: false,
+                },//---------
+                UserGroupList: [],
+                IsEditing: false,
+            }
+        },
+        mounted() {
+            this.GetUserGroup();
+        },
+        methods: {
+            PostUser() {
+                axios.post('/Account/SystemUser', this.UserVm).
+                    then(res => {
+                        this.CleanUI();
+                        showNotificationMessage(res.data);
+                    });
+            },//------
+            UpdateUser() {
+                axios.put('/Account/SystemUser', this.UserVm).
+                    then(res => {
+                        showNotificationMessage(res.data);
+                        this.IsEditing = false;
+                        this.CleanUI();
+                    });
+
+            },//------
+            DeleteUser(id) {
+                confirmDialog('آیا می خواهید کاربر را غیرفعال کنید؟', "", 'info').then(res => {
+                    if (res.isConfirmed) {
+                        axios.delete("/Account/SystemUser/" + id).
+                            then(res => {
+                                showNotificationMessage(res.data);
+                                this.CleanUI();
+                            });
+                    }
+                });
+            },//------
+            GetUserGroup() {
+                axios.get('/Account/UserGroup').
+                    then(res => {
+                        this.UserGroupList = res.data;
+                    });
+            },//------
+            CleanUI() {
+                this.UserVm = {
+                    SystemUserID: 0,
+                    SystemUserName: '',
+                    SystemUserPassword: '',
+                    SystemUserGroupID: 0,
+                    IsDeleted: false,
+                },//---------;
+                this.IsEditing = false;
+                $('#grid').data('kendoGrid').dataSource.read();
+                $('[class="btn-close"]').click();
+            },//------
+        }
+    }
+
+    var VueUser = Vue.createApp(UserUI).mount('#UserUIDiv');
+</script>

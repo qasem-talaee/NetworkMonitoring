@@ -1,0 +1,36 @@
+﻿@font-face {
+    font-family: Sahel;
+    src: url('../Font/sahel.ttf') format('truetype');
+    font-weight: normal;
+}
+
+@font-face {
+    font-family: Sahel-FD;
+    src: url('../Font/Sahel-FD.eot');
+    src: url('../Font/Sahel-FD.eot?#iefix') format('Sahel-FD-opentype'), url('../Font/Sahel-FD.woff') format('woff'), url('../Font/Sahel-FD.ttf') format('truetype');
+    /*font-weight:  ;
+    font-style: normal;*/
+}
+
+@font-face {
+    font-family: "hafs";
+    src: url('../Font/hafs.eot');
+    src: url('../Font/hafs.woff2') format('woff2'), url('../Font/hafs.woff') format('woff'), url('../Font/hafs.otf') format('opentype');
+}
+
+.font-sahel-bold {
+    font-family: sahel;
+    font-weight: bold;
+}
+
+.font-sahel {
+    font-family: sahel;
+}
+
+.font-sahel-fd {
+    font-family: Sahel-FD;
+}
+
+.font-hafs {
+    font-family: hafs;
+}

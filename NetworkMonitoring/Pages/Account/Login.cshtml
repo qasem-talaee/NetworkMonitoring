@@ -1,0 +1,84 @@
+﻿@page
+@model NetworkMonitoring.UI.Pages.Account.LoginModel
+@{
+    ViewData["Title"] = "ورود";
+}
+
+@if (!User.Identity.IsAuthenticated)
+{
+    <div id="loginUIDiv" style="height:70vh">
+        <div class="row" style="margin-top:15%;">
+            <div class="col-4 mx-auto" style="background-color:cadetblue;padding:2rem;">
+                <h4 class="text-center">نرم افزار مانیتورینگ شبکه واحد ICT شرکت مانا انرژی پاک</h4>
+                <div class="d-flex justify-content-center" style="font-weight:bold; margin-top:2rem;">
+                    <div class="rounded animate__animated animate__fadeIn" style=" width: 300px;">
+
+                        <div class="input-group mb-3">
+                            <span class="input-group-text bg-warning"><i class="fas fa-user"></i></span>
+                            <input v-model="LoginVm.SystemUserUserName" type="text" class="form-control form-control-sm text-center" placeholder="نام کاربری" aria-label="Username" aria-describedby="basic-addon1">
+                        </div>
+
+                        <div class="input-group mb-3">
+                            <span class="input-group-text bg-warning"><i class="fas fa-key"></i></span>
+                            <input v-model="LoginVm.SystemUserPassword" class="form-control form-control-sm text-center" type="password" placeholder="رمز عبور" aria-describedby="basic-addon1">
+                        </div>
+
+                        <div class="mb-3 d-grid gap-2">
+                            <button type="button" @@click="Login" id="btn-login" :class="[IsPosting ? 'disabled btn btn-sm btn-primary btn-lg' : 'btn btn-sm btn-primary btn-lg']">
+                                <i class="fas fa-sign-in-alt"></i>
+                                <span class="ms-1">ورود</span>
+                            </button>
+                        </div>
+                        <label class="bg-danger badge rounded-pill">{{message}}</label>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        const loginUI = {
+            data() {
+                return {
+                    LoginVm: {
+                        SystemUserUserName: '',
+                        SystemUserPassword: ''
+                    },
+                    IsPosting: false,
+                    message: ''
+                }
+            },
+            mounted() {
+
+            },
+            methods: {
+                Login() {
+                    this.IsPosting = true;
+
+                    axios.post('/Account/Login', this.LoginVm).
+                        then(res => {
+                            if (res.data.includes('OK')) {
+                                window.location = '/index' //+ window.location.search.substr(14).replace('%2F', '/');
+                                this.IsPosting = false;
+
+                            }
+                            else {
+                                if (res.data.includes('error')) {
+                                    this.message = 'ورود امکان پذیر نیست';
+                                    this.IsPosting = false;
+                                    this.LoginVm.SystemUserUserName = '';
+                                    this.LoginVm.SystemUserPassword = '';
+                                }
+                            };
+                        });
+                },
+            }
+        };
+
+        Vue.createApp(loginUI).mount("#loginUIDiv");
+    </script>
+}
+else
+{
+
+}

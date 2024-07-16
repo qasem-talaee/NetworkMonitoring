@@ -1,0 +1,223 @@
+﻿@page
+@model NetworkMonitoring.UI.Pages.Account.ManageSystemUserGroupModel
+@{
+    ViewData["Title"] = "مدیریت گروه کاربران";
+}
+
+<script src="~/lib/jsTree/jsTree.js"></script>
+<link href="~/lib/Jstree/themes/default/style.css" rel="stylesheet" />
+
+
+<div class="card p-3">
+    <h2>مدیریت گروه کاربران</h2>
+    <div class="k-rtl">
+        <div id="grid"></div>
+    </div>
+</div>
+
+<script>
+    $(document).ready(function () {
+
+        var dataSource3 = new kendo.data.DataSource({
+            transport: {
+                read: {
+                    url: '/Account/UserGroup',
+                    dataType: "json",
+                    type: "get",
+                    complete: function (e) {
+                        // console.log(e);
+                    },
+                },
+                create: {
+                    url: '/Account/UserGroup',
+                    dataType: "json",
+                    type: "post",
+                    complete: function (e) {
+                        $('#grid').data('kendoGrid').dataSource.read();
+                        if (e.responseText != null) { if (!e.responseText.includes('Forbidden')) { showNotificationMessage(e.responseText); } else { showNotificationMessage('دسترسی مجاز نیست+error'); } } else { showNotificationMessage('دسترسی مجاز نیست+error'); }
+                    }
+                },
+
+                update: {
+                    url: '/Account/UserGroup',
+                    dataType: "json",
+                    type: "put",
+                    complete: function (e) {
+                        $('#grid').data('kendoGrid').dataSource.read();
+                        if (e.responseText != null) { if (!e.responseText.includes('Forbidden')) { showNotificationMessage(e.responseText); } else { showNotificationMessage('دسترسی مجاز نیست+error'); } } else { showNotificationMessage('دسترسی مجاز نیست+error'); }
+
+                    }
+                },
+                destroy: {
+                    url: '/Account/UserGroup',
+                    dataType: "json",
+                    type: "delete",
+                    complete: function (e) {
+                        $('#grid').data('kendoGrid').dataSource.read();
+                        if (e.responseText != null) { if (!e.responseText.includes('Forbidden')) { showNotificationMessage(e.responseText); } else { showNotificationMessage('دسترسی مجاز نیست+error'); } } else { showNotificationMessage('دسترسی مجاز نیست+error'); }
+
+                    }
+                }
+            },
+            pageSize: 20,
+            schema: {
+                model: {
+                    id: "SystemUserGroupID",
+                    fields: {
+                        SystemUserGroupID: { hidden: false, editable: false, nullable: true },
+                        SystemUserGroupTitle: { validation: { required: true } },
+                    }
+                }
+            }
+        });
+
+        //-*-
+        $("#grid").kendoGrid({
+            dataSource: dataSource3,
+            height: 750,
+            filterable: {
+                extra: false,
+                operators: {
+                    string: {
+                        startswith: "شروع شده با",
+                        eq: "مساوی است با",
+                        neq: "مساوی نیست با"
+                    }
+                }
+            },
+            sortable: true,
+            pageable: true,
+            toolbar: ["create", "search"],
+            editable: {
+                mode: "popup",
+                window: { title: "گروه کاری" }
+
+            },
+            columns: [
+
+                {
+                    field: "SystemUserGroupID",
+                    title: "SystemUserGroupID",
+                },
+
+                {
+                    field: "SystemUserGroupTitle",
+                    title: "SystemUserGroupTitle",
+                },
+
+                { command: [{ text: "دسترسی", click: FNchangeAccessRole }, "edit", "destroy"], title: "&nbsp;", width: "17em" }
+
+            ]
+        });
+        //-*-
+        //Get Acces Role And Loadede To Tree
+        function FNchangeAccessRole(e) {
+            e.preventDefault();
+            var dataItem = this.dataItem($(e.currentTarget).closest("tr"));
+
+            //Go And Get All UserGroup AccessRoles
+            axios.get("/Account/GetUserGroupAccess/" + dataItem.SystemUserGroupID).
+                then(res => {
+                    console.log(res.data);
+                    $('[name="SelectedObject"]').val(res.data.SystemObjects);
+
+                    $('#sysOTree').jstree("uncheck_all");
+                    $('#sysOTree').jstree("check_node", res.data.SystemObjects);
+
+                    $('[name="SystemUserGroupID"]').val(dataItem.SystemUserGroupID)
+
+                    $('#btnShowSystObject').click();
+                });
+        }
+        //-*-
+
+    });//End Doc ready
+</script>
+
+
+<!--Vue Will Start From Here-->
+<div id="accUIDiv" class="text-dark">
+
+    <button id="btnShowSystObject" type="button" hidden data-bs-toggle="modal" data-bs-target="#SystemObjectModal"></button>
+    <div class="modal fade" id="SystemObjectModal" data-bs-backdrop="static" data-bs-keyboard="false" tabindex="-1" aria-hidden="true">
+        <div class="modal-dialog modal-dialog-centered">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h5 class="modal-title" id="SystemObjectModalHeaderLable">مدیریت دسترسی</h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+                </div>
+                <div class="modal-body">
+                    <input type="hidden" name="SystemUserGroupID" />
+                    <div id="sysOTree"></div>
+                    <input type="hidden" name="SelectedObject" />
+                </div>
+                <div class="modal-footer" dir="ltr">
+                    <button type="button" class="btn btn-secondary btn-sm" data-bs-dismiss="modal">بستن</button>
+                    <button type="button" class="btn btn-primary btn-sm" @@click="ChangeRole">ذخیره</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+</div>
+
+
+<!--JsTree Functions-->
+<script>
+    $(function () {
+        $('#sysOTree').jstree(
+            {
+                'core': {
+                    'data': {
+                        'url': '/Account/GetSystemObjects',
+                        'data': function (node) {
+                            return { 'id': node.id };
+                        }
+                    },
+                    "check_callback": true
+                },
+
+                'plugins': ["checkbox", "search", "wholerow"]
+            }
+        );
+
+        //JsTree Events
+        $('#sysOTree').on("changed.jstree", function (e, data) {
+            $('[name="SelectedObject"]').val($('#sysOTree').jstree("get_checked", false));
+        });
+    });
+
+</script>
+
+<script>
+    //Will Go Under The Vue Js
+    const accUI = {
+        data() {
+            return {
+                AccRoleVm: {
+                    SystemUserGroupID: 0,
+                    SystemObjects: [],
+                }
+            }
+        },
+        mounted() {
+            //this.showMe(this.AccRoleVm.SystemUserGroupID);
+        },
+        methods: {
+            ChangeRole() {
+                this.AccRoleVm.SystemUserGroupID = $('[name="SystemUserGroupID"]').val();
+                this.AccRoleVm.SystemObjects = $('#sysOTree').jstree("get_checked", false);
+
+                axios.post('/Account/ChangeUserGroupAccessRoles', this.AccRoleVm).
+                    then(res => {
+                        showNotificationMessage(res.data);
+                        $('[data-bs-dismiss="modal"]').click();
+                    });
+            },
+            GetSelectedRoles() {
+
+            }
+        }
+    }
+    Vue.createApp(accUI).mount("#accUIDiv");
+</script>

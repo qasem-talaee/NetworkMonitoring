@@ -1,0 +1,235 @@
+﻿@page
+@model NetworkMonitoring.UI.Pages.BasicData.EquipmentTypeManagementModel
+@{
+	ViewData["Title"] = "Equipment Type Management";
+}
+
+<div class="card p-3">
+    <h2>مدیریت نوع تجهیزات</h2>
+    <div class="k-rtl">
+        <div id="grid"></div>
+    </div>
+</div>
+
+<script>
+    $(document).ready(function () {
+
+        var dataSource = new kendo.data.DataSource({
+            transport: {
+                read: {
+                    url: '/BasicData/EquipmentTypeAll',
+                    dataType: "json",
+                    type: "get",
+                    complete: function (e) {
+
+                    },
+                },
+            },
+            pageSize: 20,
+        });
+
+        //-*-
+        $("#grid").kendoGrid({
+            dataSource: dataSource,
+            height: 750,
+            filterable: {
+                extra: false,
+                operators: {
+                    string: {
+                        startswith: "شروع شده با",
+                        eq: "مساوی است با",
+                        neq: "مساوی نیست با"
+                    }
+                }
+            },
+            sortable: true,
+            pageable: true,
+            toolbar: [{ text: "اضافه کردن", name: "newFunc" }, "search"],
+            editable: {
+                mode: "popup",
+                window: { title: "شاخص" }
+
+            },
+            columns: [
+                {
+                    field: "EquipmentTypeImage",
+                    title: "عکس",
+                    template: '<img class="avatar k-avatar k-avatar-solid-primary k-avatar-solid k-avatar-lg k-rounded-full" src="#:EquipmentTypeImage#" />'
+                },
+                {
+                    field: "EquipmentTypeName",
+                    title: "نوع",
+                },
+
+                { command: [{ text: "ویرایش", click: EditFunc }, { text: "حذف", click: RemoveFunc }], title: "&nbsp;", width: "17rem" }
+
+            ]
+        });
+        //-*-
+        function EditFunc(e) {
+            e.preventDefault();
+            var dataItem = this.dataItem($(e.currentTarget).closest("tr"));
+            VueType.TypeVm = dataItem;
+            VueType.IsEditing = true;
+            $('#btn-Edit').click();
+        }
+
+        function RemoveFunc(e) {
+            e.preventDefault();
+            var dataItem = this.dataItem($(e.currentTarget).closest("tr"));
+            VueType.DeleteType(dataItem.EquipmentTypeID);
+        }
+
+        $(".k-grid-newFunc").click(function (e) { // note that the class is k-grid-new since the name of the command is new
+            $('#btn-Add').click();
+        });
+    });//End Doc ready
+</script>
+
+
+<div id="UserUIDiv">
+    <!-- ManageModal -->
+    <button hidden id="btn-Add" type="button" class="btn btn-primary" data-bs-toggle="modal" data-bs-target="#ManageModal">Add</button>
+    <button hidden id="btn-Edit" type="button" class="btn btn-primary" data-bs-toggle="modal" data-bs-target="#ManageModal">Edit</button>
+
+    <div class="modal fade" data-bs-backdrop="static" data-bs-keyboard="false" id="ManageModal" tabindex="-1" aria-labelledby="ManageChartModalLabel" aria-hidden="true">
+        <div class="modal-dialog modal-dialog-centered modal-lg">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+                </div>
+                <div class="modal-body">
+                    <!---->
+
+                    <div class="mb-3">
+                        <label class="form-label">نام</label>
+                        <input v-model="TypeVm.EquipmentTypeName" type="text" class="form-control form-control-sm">
+                    </div>
+
+                    <p class="text-danger" v-if="IsEditing">در صورتی که نمی خواهید عکس تغییر کند فیلد زیر را خالی بگذارید</p>
+                    <div class="mb-3">
+                        <label class="form-label">عکس</label>
+                        <br />
+                        <input hidden id="ImgInput" type="file" class="form-control form-control-sm">
+                        <button class="btn btn-outline-primary" onclick="$('#ImgInput').click();">
+                            <span class="me-3">انتخاب عکس</span>
+                            <img class="img" id="avatar" style="width:50px" />
+                        </button>
+
+                    </div>
+
+                    <!---->
+                </div>
+                <div class="modal-footer" dir="ltr">
+                    <button v-on:click="CleanUI" type="button" class="btn btn-danger" data-bs-dismiss="modal"><i class="fas fa-window-close"></i><span class="me-2">انصراف</span></button>
+                    <button v-if="!IsEditing" v-on:click="PostType" type="button" class="btn btn-success"><i class="fas fa-save"></i><span class="me-2">ذخیره</span></button>
+                    <button v-if="IsEditing" v-on:click="UpdateType" type="button" class="btn btn-warning"><i class="fas fa-save"></i><span class="me-2">ویرایش</span></button>
+                </div>
+            </div>
+        </div>
+    </div>
+    <!-- ManageModal -->
+
+</div>
+
+
+<script>
+    var UserUI = {
+        data() {
+            return {
+                TypeVm: {
+                    EquipmentTypeID: 0,
+                    EquipmentTypeName: '',
+                    EquipmentTypeImage: '',
+                },//---------
+                TypeList: [],
+                IsEditing: false,
+            }
+        },
+        mounted() {
+            this.GetAllTypes();
+        },
+        methods: {
+            PostType() {
+                axios.post('/BasicData/EquipmentType', this.TypeVm).
+                    then(res => {
+                        this.CleanUI();
+                        showNotificationMessage(res.data);
+                    });
+            },//------
+            UpdateType() {
+                axios.put('/BasicData/EquipmentType', this.TypeVm).
+                    then(res => {
+                        showNotificationMessage(res.data);
+                        this.IsEditing = false;
+                        this.CleanUI();
+                    });
+
+            },//------
+            DeleteType(id) {
+                confirmDialog('آیا می خواهید حذف کنید؟', "", 'info').then(res => {
+                    if (res.isConfirmed) {
+                        axios.delete("/BasicData/EquipmentType/" + id).
+                            then(res => {
+                                showNotificationMessage(res.data);
+                                this.CleanUI();
+                            });
+                    }
+                });
+            },//------
+            GetAllTypes() {
+                axios.get('/BasicData/EquipmentTypeAll').
+                    then(res => {
+                        this.TypeList = res.data;
+                    });
+            },//------
+            CleanUI() {
+                this.TypeVm = {
+                    EquipmentTypeID: 0,
+                    EquipmentTypeName: '',
+                    EquipmentTypeImage: '',
+                },//---------;
+                this.IsEditing = false;
+                $('#grid').data('kendoGrid').dataSource.read();
+                $('[class="btn-close"]').click();
+            },//------
+        }
+    }
+
+    var VueType = Vue.createApp(UserUI).mount('#UserUIDiv');
+</script>
+
+
+<!-- Base64 -->
+<script>
+    const input = document.getElementById("ImgInput");
+
+    const convertBase64 = (file) => {
+        return new Promise((resolve, reject) => {
+            const fileReader = new FileReader();
+            fileReader.readAsDataURL(file);
+
+            fileReader.onload = () => {
+                resolve(fileReader.result);
+            };
+
+            fileReader.onerror = (error) => {
+                reject(error);
+            };
+        });
+    };
+
+    const uploadImage = async (event) => {
+        const file = event.target.files[0];
+        const base64 = await convertBase64(file);
+
+        $('#avatar').attr('src', base64);
+        VueType.TypeVm.EquipmentTypeImage = base64;
+    };
+
+    input.addEventListener("change", (e) => {
+        uploadImage(e);
+
+    });
+</script>
+<!-- End Base64 -->

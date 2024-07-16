@@ -1,0 +1,335 @@
+﻿@page
+@model NetworkMonitoring.UI.Pages.Report.EquipmentReportPageModel
+@{
+	ViewData["Title"] = "Equipment Report";
+}
+
+<script src="~/lib/adm picker/angular.min.js"></script>
+<link href="~/lib/adm picker/adm-datetimepicker.css" rel="stylesheet" />
+<script src="~/lib/adm picker/adm-datetimepicker.js"></script>
+
+<div ng-app="PersiandatePicker" style="font-family:sahel !important;">
+	<div id="ReportEqUI" class="p-3">
+		<h3>گزارش تجهیزات</h3>
+		<!-- Date Filter -->
+		<div class="row">
+			<div class="card">
+				<div class="card-body">
+					<div class="row text-center">
+						<h5 class="text-danger">ابتدا بازه زمانی خود را مشخص کنید</h5>
+					</div>
+					<hr />
+					<div class="row">
+						<div class="col-5">
+							<h5>از تاریخ:</h5>
+							<adm-dtp ng-model='FromDate' full-data="dFromDate" dir="ltr" options="{default: 'today',autoClose: true, zIndex: 9999, dtpType: 'date', freezeInput: true, calType: 'jalali', format: 'YYYY/MM/DD', multiple: false }"></adm-dtp>
+							<input hidden id="FromDate" type="text" ng-model="FromDate" role="{{dFromDate.lDate}}" />
+						</div>
+						<div class="col-5">
+							<h5>تا تاریخ:</h5>
+							<adm-dtp mindate="{{dFromDate.unix}}" ng-model='ToDate' full-data="dToDate" dir="ltr" options="{default: 'today',autoClose: true, zIndex: 9999, dtpType: 'date', freezeInput: true, calType: 'jalali', format: 'YYYY/MM/DD', multiple: false }"></adm-dtp>
+							<input hidden id="ToDate" type="text" ng-model="ToDate" role="{{dToDate.lDate}}" />
+						</div>
+						<div class="col-2">
+							<h5>نتیجه</h5>
+							<button v-on:click="GetResultAll" v-if="GetResultFlag" class="btn btn-primary">دریافت گزارش کلی</button>
+						</div>
+					</div>
+				</div>
+			</div>
+		</div>
+		<!-- Date Filter -->
+
+		<div class="row mt-2">
+			<!-- IP Filter -->
+			<div class="col-4">
+				<div class="card">
+					<div class="card-body">
+						<div class="row">
+							<h5>فیلتر بر اساس آدرس IP</h5>
+						</div>
+						<div class="row">
+							<select class="form-select" v-model="FilterViewModel.IPAddress">
+								<option v-for="item in IPList" v-bind:value="item.IPAddress">{{ item.IPAddress }}</option>
+							</select>
+						</div>
+						<div class="row mt-3 ps-3 pe-3">
+							<button v-on:click="GetResultPerIP" v-if="GetResultFlag" class="btn btn-primary">دریافت گزارش</button>
+						</div>
+					</div>
+				</div>
+			</div>
+			<!-- IP Filter -->
+			<!-- Type Filter -->
+			<div class="col-4">
+				<div class="card">
+					<div class="card-body">
+						<div class="row">
+							<h5>فیلتر بر اساس Type</h5>
+						</div>
+						<div class="row">
+							<select class="form-select" v-model="FilterViewModel.Type">
+								<option v-for="item in TypeList" v-bind:value="item.EquipmentTypeID">{{ item.EquipmentTypeName }}</option>
+							</select>
+						</div>
+						<div class="row mt-3 ps-3 pe-3">
+							<button v-on:click="GetResultPerType" v-if="GetResultFlag" class="btn btn-primary">دریافت گزارش</button>
+						</div>
+					</div>
+				</div>
+			</div>
+			<!-- Type Filter -->
+			<!-- Location Filter -->
+			<div class="col-4">
+				<div class="card">
+					<div class="card-body">
+						<div class="row">
+							<h5>فیلتر بر اساس Location</h5>
+						</div>
+						<div class="row">
+							<select class="form-select" v-model="FilterViewModel.Location">
+								<option v-for="item in LocationList" v-bind:value="item.EquipmentLocationID">{{ item.EquipmentLocationName }}</option>
+							</select>
+						</div>
+						<div class="row mt-3 ps-3 pe-3">
+							<button v-on:click="GetResultPerLocation" v-if="GetResultFlag" class="btn btn-primary">دریافت گزارش</button>
+						</div>
+					</div>
+				</div>
+			</div>
+			<!-- Location Filter -->
+
+		</div>
+
+		<div class="row mt-3 ps-3">
+			<div class="row text-center alert alert-danger" v-if="ResultList.length != 0">
+				<h5>Sum : <span>{{ TotalDiff }}</span></h5>
+			</div>
+		</div>
+		<div class="k-rtl">
+			<div id="grid"></div>
+		</div>
+	</div>
+</div>
+
+
+<script>
+	var app = angular.module('PersiandatePicker', ['ADM-dateTimePicker']);
+	const vueObjectUI = {
+		data() {
+			return {
+				FilterViewModel:{
+					IPAddress: '',
+					Type: 0,
+					Location: 0,
+					FromDate: new Date(),
+					ToDate: new Date(),
+				},
+				IPList: [],
+				TypeList: [],
+				LocationList: [],
+				GetResultFlag: true,
+				ResultList: [],
+				TotalDiff: '',
+			}
+		},
+		mounted() {
+			this.GetIPList();
+			this.GetTypeList();
+			this.GetLocationList();
+		},
+		methods: {
+			GetIPList(){
+				axios.get("/Service/EquipmentIPAll/").
+					then(res => {
+						this.IPList = res.data;
+					});
+			},//---
+			GetTypeList() {
+				axios.get("/BasicData/EquipmentTypeAll/").
+					then(res => {
+						this.TypeList = res.data;
+					});
+			},//---
+			GetLocationList() {
+				axios.get("/BasicData/EquipmentLocationAll/").
+					then(res => {
+						this.LocationList = res.data;
+					});
+			},//---
+			GetResultPerIP() {
+				if (new Date($('#FromDate').attr('role') + " 12:00:00") != "Invalid Date" && new Date($('#ToDate').attr('role') + " 12:00:00" != "Invalid Date")) {
+					if (this.FilterViewModel.IPAddress != ''){
+						this.GetResultFlag = false;
+						this.FilterViewModel.FromDate = new Date($('#FromDate').attr('role') + " 00:00:00");
+						this.FilterViewModel.ToDate = new Date($('#ToDate').attr('role') + " 00:00:00");
+						this.FilterViewModel.Type = null;
+						this.FilterViewModel.Location = null;
+						axios.post("/Report/ReportEquipment", this.FilterViewModel).
+							then(res => {
+								this.ResultList = res.data;
+								this.GetResultFlag = true
+								$('#grid').data('kendoGrid').setDataSource(res.data);
+								this.GetTotalDiff();
+							});
+					}
+				}
+			},//---
+			GetResultPerType() {
+				if (new Date($('#FromDate').attr('role') + " 12:00:00") != "Invalid Date" && new Date($('#ToDate').attr('role') + " 12:00:00" != "Invalid Date")) {
+					if (this.FilterViewModel.Type != null) {
+						this.GetResultFlag = false;
+						this.FilterViewModel.FromDate = new Date($('#FromDate').attr('role') + " 00:00:00");
+						this.FilterViewModel.ToDate = new Date($('#ToDate').attr('role') + " 00:00:00");
+						this.FilterViewModel.Location = null;
+						this.FilterViewModel.IPAddress = null;
+						axios.post("/Report/ReportEquipment", this.FilterViewModel).
+							then(res => {
+								this.ResultList = res.data;
+								this.GetResultFlag = true
+								$('#grid').data('kendoGrid').setDataSource(res.data);
+								this.GetTotalDiff();
+							});
+					}
+				}
+			},//---
+			GetResultPerLocation() {
+				if (new Date($('#FromDate').attr('role') + " 12:00:00") != "Invalid Date" && new Date($('#ToDate').attr('role') + " 12:00:00" != "Invalid Date")) {
+					if (this.FilterViewModel.Location != null) {
+						this.GetResultFlag = false;
+						this.FilterViewModel.FromDate = new Date($('#FromDate').attr('role') + " 00:00:00");
+						this.FilterViewModel.ToDate = new Date($('#ToDate').attr('role') + " 00:00:00");
+						this.FilterViewModel.Type = null;
+						this.FilterViewModel.IPAddress = null;
+						axios.post("/Report/ReportEquipment", this.FilterViewModel).
+							then(res => {
+								this.ResultList = res.data;
+								this.GetResultFlag = true
+								$('#grid').data('kendoGrid').setDataSource(res.data);
+								this.GetTotalDiff();
+							});
+					}
+				}
+			},//---
+			GetResultAll() {
+				if (new Date($('#FromDate').attr('role') + " 12:00:00") != "Invalid Date" && new Date($('#ToDate').attr('role') + " 12:00:00" != "Invalid Date")) {
+					this.GetResultFlag = false;
+					this.FilterViewModel.FromDate = new Date($('#FromDate').attr('role') + " 00:00:00");
+					this.FilterViewModel.ToDate = new Date($('#ToDate').attr('role') + " 00:00:00");
+					this.FilterViewModel.Type = null;
+					this.FilterViewModel.IPAddress = null;
+					this.FilterViewModel.Location = null;
+					axios.post("/Report/ReportEquipment", this.FilterViewModel).
+						then(res => {
+							this.ResultList = res.data;
+							this.GetResultFlag = true
+							$('#grid').data('kendoGrid').setDataSource(res.data);
+							this.GetTotalDiff();
+						});
+				}
+			},//---
+			GetTotalDiff(){
+				if (this.ResultList.length != 0) {
+					this.TotalDiff = this.ResultList.at(-1).Total;
+				}
+				
+			},//---
+		},
+	};
+
+	var vueRepObj = Vue.createApp(vueObjectUI).mount('#ReportEqUI');
+</script>
+
+
+<!--Grid-->
+<script>
+
+    var dataSource = new kendo.data.DataSource({
+        pageSize: 20,
+    });
+
+    //-*-
+    $("#grid").kendoGrid({
+        dataSource: dataSource,
+        height: 750,
+        filterable: {
+            extra: false,
+            operators: {
+                string: {
+                    startswith: "شروع شده با",
+                    eq: "مساوی است با",
+                    neq: "مساوی نیست با",
+                }
+            }
+        },
+        excel: {
+            fileName: "Equipment Reprot Export" + new Date(),
+            filterable: true,
+            allPages: true
+        },
+        excelExport: function (e) {
+            var workbook = e.workbook;
+            var sheet = workbook.sheets[0];
+            workbook.rtl = true;
+            for (var col = 0; col < workbook.sheets[0].columns.length; col++) {
+                workbook.sheets[0].columns[col].autoWidth = false;
+                workbook.sheets[0].columns[col].width = 100;
+                //workbook.sheets[0].columns[col]
+            }
+            for (var i = 0; i < sheet.rows.length; i++) {
+                for (var ci = 0; ci < sheet.rows[i].cells.length; ci++) {
+                    sheet.rows[i].cells[ci].wrap = true;
+
+                    sheet.rows[i].cells[ci].vAlign = "center";
+                    sheet.rows[i].cells[ci].hAlign = "center";
+
+                    //sheet.rows[i].cells[ci].textAlign.vAlign = "center";
+                }
+            }
+        },
+        sortable: true,
+        pageable: true,
+        toolbar: ["excel", "search"],
+
+        columns: [
+            {
+                field: "Name",
+                title: "نام",
+            },
+            {
+                field: "IPAddress",
+                title: "IP",
+            },
+			{
+				field: "Location",
+				title: "مکان",
+			},
+			{
+				field: "Type",
+				title: "نوع",
+			},
+			{
+                field: "DownTime",
+                title: "زمان خاموشی",
+            },
+			{
+				field: "UpTime",
+				title: "زمان برگشت",
+			},
+			{
+				field: "Diffrence",
+				title: "مدت زمان",
+			},
+			{
+				field: "Total",
+				title: "Total",
+				hidden: true,
+				exportable: false
+			},
+        ]
+    });
+    //-*-
+    
+
+    //End Doc ready
+</script>
